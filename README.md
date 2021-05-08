@@ -24,7 +24,7 @@
 Flight Surety is a flight delay insurance Dapp with multiple smart contracts which are autonomously triggered by external sources, and which handle payments based on flight delay scenarios. This repository includes:
 
 * Multiple smart contracts written in Solidity.
-* Automated contract testings using Mocha and Chai.
+* Automated contract testing using Mocha and Chai.
 * ...
 
 | ⚠️ **Notice**: For development purposes only! |
