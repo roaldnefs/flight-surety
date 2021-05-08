@@ -1,0 +1,17 @@
+{
+  "name": "flight-surety",
+  "version": "1.0.0",
+  "description": "Flight delay insurance Dapp with multiple smart contracts which are autonomously triggered by external sources, and which handle payments based on flight delay scenarios.",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@truffle/hdwallet-provider": "^1.3.1"
+  }
+}
