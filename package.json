@@ -13,12 +13,14 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dapp": "echo \"Error: no dapp specified\" && exit 1",
-    "server": "echo \"Error: no server specified\" && exit 1"
+    "server": "echo \"Error: no server specified\" && exit 1",
+    "solhint": "./node_modules/.bin/solhint contracts/**/*.sol"
   },
   "author": "Roald Nefs <info@roaldnefs.com>",
   "license": "MIT",
   "devDependencies": {
     "@truffle/hdwallet-provider": "^1.3.1",
+    "solhint": "^3.3.4",
     "truffle": "^5.3.5"
   }
 }
