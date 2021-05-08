@@ -11,7 +11,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "truffle test ./test/flightSurety.js",
     "dapp": "cd app && npm run dev",
     "server": "echo \"Error: no server specified\" && exit 1",
     "solhint": "./node_modules/.bin/solhint contracts/**/*.sol"
