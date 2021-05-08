@@ -2,16 +2,23 @@
   "name": "flight-surety",
   "version": "1.0.0",
   "description": "Flight delay insurance Dapp with multiple smart contracts which are autonomously triggered by external sources, and which handle payments based on flight delay scenarios.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/roaldnefs/flight-surety.git"
+  },
   "main": "truffle-config.js",
   "directories": {
     "test": "test"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dapp": "echo \"Error: no dapp specified\" && exit 1",
+    "server": "echo \"Error: no server specified\" && exit 1"
   },
-  "author": "",
+  "author": "Roald Nefs <info@roaldnefs.com>",
   "license": "MIT",
   "devDependencies": {
-    "@truffle/hdwallet-provider": "^1.3.1"
+    "@truffle/hdwallet-provider": "^1.3.1",
+    "truffle": "^5.3.5"
   }
 }
