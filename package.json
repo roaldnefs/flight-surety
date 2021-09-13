@@ -13,7 +13,7 @@
   "scripts": {
     "test": "truffle test ./test/flightSurety.js",
     "dapp": "cd app && npm run dev",
-    "server": "echo \"Error: no server specified\" && exit 1",
+    "server": "cd server && npm run dev",
     "solhint": "./node_modules/.bin/solhint contracts/**/*.sol"
   },
   "author": "Roald Nefs <info@roaldnefs.com>",
