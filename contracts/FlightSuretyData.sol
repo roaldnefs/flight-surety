@@ -10,7 +10,21 @@ contract FlightSuretyData {
     // Account used to deploy contract.
     address private contractOwner;
     // Blocks all state changes throughout the contract if set to false.
-    bool private operational = true;
+    bool private operational;
+    // Holds the authorized callers.
+    mapping(address => bool) authorized;
+
+    // Airline related resources
+    struct Airline {
+        uint id;
+        bool isAccepted;
+    }
+    uint public airlineCount;
+    mapping(address => Airline) public airlines;
+
+    // Flight related resources
+
+    // Insurance related resources
 
     // Modifier that requires the operational boolean variable to be true. This
     // is used on all state changing functions to pause the contract in the
@@ -27,8 +41,35 @@ contract FlightSuretyData {
         _;
     }
 
-    constructor() {
+    modifier requireAuthorized() {
+        require(authorized[msg.sender] == true, "Caller is not authorized");
+        _;
+    }
+
+    // Modifier that requires the airline to be registered.
+    modifier requireAirlineRegistered(address _address) {
+        require(airlines[_address].id > 0, "Airline with given address is not registered");
+        _;
+    }
+
+    // Modifier that requires the airline to not yet be registered.
+    modifier requireAirlineNotRegistered(address _address) {
+        require(airlines[_address].id == 0, "Airline with given address is already registered");
+        _;
+    }
+
+    constructor() payable {
         contractOwner = msg.sender;
+        operational = true;
+        airlineCount = 0;
+
+        // Authorize the data contract and contract owner to call functions
+        // that are public but should't be called by non-authorized callers.
+        authorized[address(this)] = true;
+        authorized[contractOwner] = true;
+
+        // First airline is registered when contract is deployed.
+        registerAirline(contractOwner, true);
     }
 
     // Get operating status of contract.
@@ -42,4 +83,45 @@ contract FlightSuretyData {
         operational = mode;
     }
 
+    function setAuthorizedCaller(address _address, bool isAuthorized)
+    requireIsOperational
+    requireContractOwner
+    public {
+        authorized[_address] = isAuthorized;
+    }
+
+    // Add an airline to the registration queue.
+    function registerAirline(address _address, bool isAccepted)
+    requireIsOperational
+    requireAuthorized
+    requireAirlineNotRegistered(_address)
+    public {
+        // Increment the airline count.
+        airlineCount = airlineCount.add(1);
+        // Add the new airline to the airlines mapping.
+        airlines[_address] = Airline({id: airlineCount, isAccepted: isAccepted});
+    }
+
+    // Fetch airline details using an airline address.
+    function getAirline(address _address) 
+    requireIsOperational
+    requireAirlineRegistered(_address)
+    public view returns (
+        address airlineAddress,
+        uint id,
+        bool isAccepted
+    ) {
+        airlineAddress = _address;
+        id = airlines[_address].id;
+        isAccepted = airlines[_address].isAccepted;
+
+        return (airlineAddress, id, isAccepted);
+    }
+
+    // Fetch the number of registered airlines.
+    function getAirlineCount()
+    requireIsOperational
+    public view returns (uint) {
+        return (airlineCount);
+    }
 }
