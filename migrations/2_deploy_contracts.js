@@ -5,7 +5,7 @@ const fs = require('fs');
 
 module.exports = function(deployer) {
   // Deploy the FlightSuretyData contract.
-  deployer.deploy(FlightSuretyData)
+  deployer.deploy(FlightSuretyData, {value: web3.utils.toWei('10', 'ether')})
   // Deploy the FlightSuretyApp contract.
   .then(() => {
     return deployer.deploy(FlightSuretyApp, FlightSuretyData.address)

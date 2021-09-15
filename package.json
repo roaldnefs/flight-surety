@@ -21,7 +21,8 @@
   "devDependencies": {
     "@truffle/hdwallet-provider": "^1.4.2",
     "solhint": "^3.3.4",
-    "truffle": "^5.4.2"
+    "truffle": "^5.4.2",
+    "truffle-assertions": "^0.9.2"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.1.0",

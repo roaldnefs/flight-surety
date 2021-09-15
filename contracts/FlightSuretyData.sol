@@ -17,7 +17,7 @@ contract FlightSuretyData {
     // Airline related resources
     struct Airline {
         uint id;
-        bool isAccepted;
+        bool isVoter;
     }
     uint public airlineCount;
     mapping(address => Airline) public airlines;
@@ -91,7 +91,7 @@ contract FlightSuretyData {
     }
 
     // Add an airline to the registration queue.
-    function registerAirline(address _address, bool isAccepted)
+    function registerAirline(address _address, bool isVoter)
     requireIsOperational
     requireAuthorized
     requireAirlineNotRegistered(_address)
@@ -99,7 +99,7 @@ contract FlightSuretyData {
         // Increment the airline count.
         airlineCount = airlineCount.add(1);
         // Add the new airline to the airlines mapping.
-        airlines[_address] = Airline({id: airlineCount, isAccepted: isAccepted});
+        airlines[_address] = Airline({id: airlineCount, isVoter: isVoter});
     }
 
     // Fetch airline details using an airline address.
@@ -109,13 +109,34 @@ contract FlightSuretyData {
     public view returns (
         address airlineAddress,
         uint id,
-        bool isAccepted
+        bool isVoter
     ) {
         airlineAddress = _address;
         id = airlines[_address].id;
-        isAccepted = airlines[_address].isAccepted;
+        isVoter = airlines[_address].isVoter;
 
-        return (airlineAddress, id, isAccepted);
+        return (airlineAddress, id, isVoter);
+    }
+
+    // Check if an airline has paid the registration fee.
+    function isFundedAirline(address _address) 
+    requireIsOperational
+    requireAirlineRegistered(_address)
+    public view returns (bool isFunded) {
+        // Retrieve airline details.
+        (,, bool isVoter) = getAirline(_address);
+        // Only funded airlines can become voters.
+        isFunded = isVoter;
+        return (isFunded);
+    }
+
+    // Update the airline details.
+    function updateAirline(address _address, bool isVoter)
+    requireIsOperational
+    requireAuthorized
+    requireAirlineRegistered(_address)
+    public {
+        airlines[_address].isVoter = isVoter;
     }
 
     // Fetch the number of registered airlines.
@@ -124,4 +145,7 @@ contract FlightSuretyData {
     public view returns (uint) {
         return (airlineCount);
     }
+
+    // Fallback function for receiving Ether.
+    receive() external payable {}
 }
