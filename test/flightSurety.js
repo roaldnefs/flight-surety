@@ -8,13 +8,13 @@ contract("FlightSuretyApp", accounts => {
 
     // Tests related to operations and settings.
 
-    it("(multiparty) has correct initial isOperational() value", async () => {
+    it("(Extra) Has correct initial isOperational() value", async () => {
         const instance = await FlightSuretyApp.deployed();
         const status = await instance.isOperational.call();
         assert.equal(status, true, "Incorrect initial operating status value");
     });
 
-    it("(multiparty) can block access to setOperatingStatus() for non-contract owner account", async () => {
+    it("(Extra) Can block access to setOperatingStatus() for non-contract owner account", async () => {
         const instance = await FlightSuretyData.deployed();
         let denied = false;
         try {
@@ -25,7 +25,7 @@ contract("FlightSuretyApp", accounts => {
         assert.equal(denied, true, "Access not restricted to contract owner");
     });
 
-    it("(multiparty) can allow access to setOperatingStatus() for contract owner account", async () => {
+    it("(Extra) Can allow access to setOperatingStatus() for contract owner account", async () => {
         const instance = await FlightSuretyData.deployed();
         let denied = false;
         try {
@@ -40,27 +40,9 @@ contract("FlightSuretyApp", accounts => {
         await instance.setOperatingStatus(true, {from: accounts[0]});
     });
 
-    // TODO: call function that requires the contract to be operational instead
-    // of the non existing setTestingMode() function.
-    // it("(multiparty) can block access to functions using requireIsOperational when operating status is false", async () => {
-    //     const instance = await FlightSuretyData.deployed();
-    //     let reverted = false;
-    //     try {
-    //         await instance.FlightSuretyApp.setTestingMode(true);
-    //     }
-    //     catch (error) {
-    //         reverted = true;
-    //     }
-    //     assert.equal(reverted, true, "Access not block for requireIsOperational");
-
-    //     // Set the operational status back to true, to allow the other tests
-    //     // to run
-    //     await instance.FlightSuretyData.setOperatingStatus(true, {from: accounts[0]});
-    // });
-
     // Tests related to airlines.
 
-    it("(airlines) first airline is registered when contract is deployed", async () => {
+    it("(Airline Contract Initialization) First airline is registered when contract is deployed", async () => {
         const instance = await FlightSuretyData.deployed();
         let found = true;
 
@@ -72,7 +54,7 @@ contract("FlightSuretyApp", accounts => {
         assert.equal(airline[2], true, "The first airline is not register as a voter");
     });
 
-    it("(airlines) only funded and registered airlines can register new airlines", async () => {
+    it("(Multiparty Consensus) Airline can be registered, but does not participate in contract until it submits funding of 10 ether", async () => {
         const instance = await FlightSuretyApp.deployed();
         let blocked = false;
         let emitted = false;
@@ -103,36 +85,120 @@ contract("FlightSuretyApp", accounts => {
         assert.equal(emitted, true, "Funded airline was not able to register another airline");
     });
 
-    // it("(airlines) only allow airlines to register the first four airlines", async () => {
-    //     const instance = await FlightSuretyApp.deployed();
-    //     let blocked = true;
-    //     let allowed = true;
+    it("(Multiparty Consensus) Only existing airline may register a new airline until there are at least four airlines registered", async () => {
+        const instance = await FlightSuretyApp.deployed();
+        let blocked = true;
+        let allowed = true;
 
-    //     // Attempt to register an airline from a non registered airline.
-    //     try {
-    //         await instance.registerAirline(accounts[2], {from: accounts[1]});
-    //     } catch(error) {
-    //         blocked = false;
-    //     }
+        // Attempt to register an airline from a non registered airline.
+        try {
+            await instance.registerAirline(accounts[4], {from: accounts[3]});
+        } catch(error) {
+            blocked = false;
+        }
 
-    //     // Attempt to register another three airlines from already registered
-    //     // airlines.
-    //     try {
-    //         await instance.registerAirline(accounts[1], {from: accounts[0]});
-    //         await instance.registerAirline(accounts[2], {from: accounts[1]});
-    //         await instance.registerAirline(accounts[3], {from: accounts[2]});
-    //     } catch(error) {
-    //         allowed = false;
-    //     }
+        // Pay registration fee for the third airline.
+        await instance.payAirlineRegistrationFee({from: accounts[2], value: web3.utils.toWei('10', 'ether')})
 
-    //     assert.equal(blocked, false, "A non registered airline was able to register a new airlines")
-    //     assert.equal(allowed, true, "The first four airlines where not allowed to register new airlines")
-    // });
+        // Attempt to register the rest of the four airlines. The first three
+        // have already been registered in previous tests.
+        try {
+            await instance.registerAirline(accounts[3], {from: accounts[2]});
+        } catch(error) {
+            allowed = false;
+        }
 
-    it("(airlines) check airline registration fee is set to 10 ether", async () => {
+        // Pay registration fee for the fourth airline.
+        await instance.payAirlineRegistrationFee({from: accounts[3], value: web3.utils.toWei('10', 'ether')})
+
+        assert.equal(blocked, false, "A non registered airline was able to register a new airlines")
+        assert.equal(allowed, true, "The first four airlines where not allowed to register new airlines")
+    });
+
+    it("(Extra) Check airline registration fee is set to 10 ether", async () => {
         const instance = await FlightSuretyApp.deployed();
         const fee = await instance.getAirlineRegistrationFee();
         assert.equal(fee, web3.utils.toWei('10', "ether"), "The airline registration fee is not correct.");
+    });
+
+    it("(Multiparty Consensus) Registration of fifth airline requires multi-party consensus of 50% of registered airlines", async () => {
+        const instance = await FlightSuretyApp.deployed();
+
+        let consensus_required = false;
+        let vote_blocked = false;
+        let emitted_registered = false;
+        let voted = false;
+
+        // Register the fifth airline, requires at least two votes to be accepted.
+        let tx = await instance.registerAirline(accounts[4], {from: accounts[0]});
+        try {
+            // Try the get the airline details for the newly added airline, it
+            // should be available yet as it first requires consensus first.
+            const airline = await instance.getAirline(accounts[4]);
+        } catch(error) {
+            consensus_required = true;
+        }
+        // Check if vote was cast on the registration of the fifth airline.
+        truffleAssertions.eventEmitted(tx, 'Voted', (ev) => {
+            voted = true;
+            return true;
+        });
+
+        try {
+            // Try to vote on the fifth airline for a second time as the first
+            // airline. It should be blocked to vote multiple times.
+            await instance.registerAirline(accounts[4], {from: accounts[0]});
+        } catch(error) {
+            vote_blocked = true;
+        }
+        
+        // Send the second vote to allow the fifth airline to be registered.
+        tx = await instance.registerAirline(accounts[4], {from: accounts[1]});
+        truffleAssertions.eventEmitted(tx, 'Registered', (ev) => {
+            emitted_registered = true;
+            return true;
+        });
+
+        // Pay registration fee for the fifth airline to let it be used in
+        // subsequent tests.
+        await instance.payAirlineRegistrationFee({from: accounts[4], value: web3.utils.toWei('10', 'ether')})
+
+        assert.equal(consensus_required, true, "Registration of fifth and subsequent airlines should require multi-party consensus.")
+        assert.equal(voted, true, "Registration of fifth and subsequent airlines should result in a new vote.")
+        assert.equal(vote_blocked, true, "Airlines should only be allowed to vote once on a new airline.");
+        assert.equal(emitted_registered, true, "Airline should have been registered at multi-party consensus of 50% of registered airlines.");
+    });
+
+    it("(Multiparty Consensus) Registration of subsequent airlines requires multi-party consensus of 50% of registered airlines", async () => {
+        const instance = await FlightSuretyApp.deployed();
+        const dataInstance = await FlightSuretyData.deployed();
+
+        let registered = false;
+        let voted = false;
+
+        // Count the number if registered airlines.
+        let count = await dataInstance.getAirlineCount()
+
+        // Register the sixth airline, requires at least three votes to be accepted.
+        let tx = await instance.registerAirline(accounts[5], {from: accounts[0]});
+        // Check if vote was cast on the registration of the sixth airline.
+        truffleAssertions.eventEmitted(tx, 'Voted', (ev) => {
+            voted = true;
+            return true;
+        });
+
+        // Cast the additional votes.
+        await instance.registerAirline(accounts[5], {from: accounts[1]});
+        tx = await instance.registerAirline(accounts[5], {from: accounts[2]});
+        // Check if registratios was passed on the third vote.
+        truffleAssertions.eventEmitted(tx, 'Registered', (ev) => {
+            registered = true;
+            return true;
+        });
+
+        assert.equal(count, 5, "Expected five airlines to be registered.");
+        assert.equal(voted, true, "Registration of subsequent airlines should require multi-party consensus.");
+        assert.equal(registered, true, "Airline should have been registered at multi-party consensus of 50% of registered airlines.");
     });
 
   });

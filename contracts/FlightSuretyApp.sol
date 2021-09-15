@@ -39,9 +39,11 @@ contract FlightSuretyApp {
     uint256 private constant ORACLE_MIN_RESPONSES = 3;
 
     // Event thrown when a new airline is registered. 
-    event Registered(address _address);
+    event Registered(address airline);
     // Event thrown when a registered airline has paid its registration fee.
-    event Funded(address _address);
+    event Funded(address airline);
+    // Event thrown when a registered airline casts a vote for a new airline.
+    event Voted(address voter, address airline);
 
     // Modifier that requires the operational boolean variable to be true. This
     // is used on all state changing functions to pause the contract in the
@@ -77,7 +79,7 @@ contract FlightSuretyApp {
     // airline yet.
     modifier requireUnvotedAirline(address _address) {
         // Check if consensus is already required otherwise skip checking votes.
-        if (flightSuretyData.getAirlineCount() > AIRLINE_CONSENSUS_THRESSHOLD) {
+        if (flightSuretyData.getAirlineCount() >= AIRLINE_CONSENSUS_THRESSHOLD) {
             // Loop over all the votes for the supplied airline.
             for (uint idx=0; idx < votes[_address].length; idx++) {
                 // Check if the caller is the current voter.
@@ -129,9 +131,15 @@ contract FlightSuretyApp {
         } else {
             // Register the callers vote for the new airline.
             votes[_address].push(msg.sender);
+            // Emit event to inform a new vote was casted.
+            emit Voted(msg.sender, _address);
+
+            // Calculate the thresshold to reach consensus. Solidity will round
+            // a division to zero.
+            uint thresshold = count.sub(count.div(AIRLINE_VOTES_DIVISOR));
             // Check if the new airline has reached the thresshold of 50% of
             // votes to be registered.
-            if (votes[_address].length >= count.div(AIRLINE_VOTES_DIVISOR)) {
+            if (votes[_address].length >= thresshold) {
                 flightSuretyData.registerAirline(_address, false);
                 votes[_address] = new address[](0);
                 // Emit event to inform a new airline was registered.
