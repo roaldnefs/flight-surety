@@ -1,4 +1,10 @@
 node_modules
 build
 dist
+
+# Secret file containing the Metamaks mnemonic of the user.
 .secret
+
+# Configuration files automatically generated on smart contract migration.
+app/src/config.json
+server/src/config.json
