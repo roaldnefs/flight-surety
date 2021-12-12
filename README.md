@@ -84,6 +84,11 @@ After installing all the [prerequisites](#prerequisites), the following commands
    ```
 To interact with the smart contract and Dapp open [http://localhost:8000/](http://localhost:8000/) in a browser with the **Metamask** extension installed and configured for the local blockchain.
 
+## API
+The back-end server (_oracles and API_) runs on port 3000 by default. The API contains the following endpoints:
+
+* `/flights`: list all the registered flights.
+
 ## Resources
 Resources used for developing the project:
 
