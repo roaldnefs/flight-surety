@@ -172,4 +172,12 @@ contract FlightSuretyApp {
         emit Funded(msg.sender);
     }
 
+    // Return the current oracle registration fee.
+    function getOracleRegistrationFee()
+    requireIsOperational
+    public view returns (uint256 fee) {
+        fee = ORACLE_REGISTRATION_FEE;
+        return (fee);
+    }
+
 }

@@ -121,6 +121,12 @@ contract("FlightSuretyApp", accounts => {
         assert.equal(fee, web3.utils.toWei('10', "ether"), "The airline registration fee is not correct.");
     });
 
+    it("(Extra) Check oracle registration fee is set to 10 ether", async () => {
+        const instance = await FlightSuretyApp.deployed();
+        const fee = await instance.getOracleRegistrationFee();
+        assert.equal(fee, web3.utils.toWei('10', "ether"), "The oracle registration fee is not correct.");
+    });
+
     it("(Multiparty Consensus) Registration of fifth airline requires multi-party consensus of 50% of registered airlines", async () => {
         const instance = await FlightSuretyApp.deployed();
 
