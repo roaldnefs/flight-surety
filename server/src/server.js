@@ -43,6 +43,8 @@ const Server = {
                 });
             } catch (error) {
                 console.log(error.message);
+            } finally {
+                console.log(`Oracle registered using address '${account}'`);
             }
         });
 
