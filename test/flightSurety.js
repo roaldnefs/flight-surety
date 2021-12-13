@@ -207,4 +207,25 @@ contract("FlightSuretyApp", accounts => {
         assert.equal(registered, true, "Airline should have been registered at multi-party consensus of 50% of registered airlines.");
     });
 
+    it("(Oracle) Can register oracle", async () => {
+        const instance = await FlightSuretyApp.deployed();
+
+        let registered = false;
+
+        const fee = await instance.getOracleRegistrationFee();
+
+        // Register an oracle using the last account.
+        tx = await instance.registerOracle({
+            from: accounts[accounts.length - 1],
+            value: fee
+        });
+        // Check if the registration emitted the required event.
+        truffleAssertions.eventEmitted(tx, 'OracleRegistered', (ev) => {
+            registered = true;
+            return true;
+        });
+
+        assert.equal(registered, true, "Oracle should have been registered.");
+    });
+
   });

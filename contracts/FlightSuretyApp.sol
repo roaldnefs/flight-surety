@@ -33,10 +33,20 @@ contract FlightSuretyApp {
     uint8 private constant STATUS_CODE_LATE_TECHNICAL = 40;
     uint8 private constant STATUS_CODE_LATE_OTHER = 50;
 
+    // Oracle related resources.
+    struct Oracle {
+        bool isRegistered;
+        uint8[3] indexes;
+    }
     // Holds the registration fee for new oracles.
     uint256 private constant ORACLE_REGISTRATION_FEE = 10 ether;
     // The number of oracles that must response for a valid status.
     uint256 private constant ORACLE_MIN_RESPONSES = 3;
+    // Holds the registered oracles.
+    mapping(address => Oracle) private oracles;
+    // Holds the nonce to help generate a pseudo random numbers at various
+    // points.
+    uint8 private nonce = 0;
 
     // Event thrown when a new airline is registered. 
     event Registered(address airline);
@@ -44,6 +54,8 @@ contract FlightSuretyApp {
     event Funded(address airline);
     // Event thrown when a registered airline casts a vote for a new airline.
     event Voted(address voter, address airline);
+    // Event thrown when an oracle is registered.
+    event OracleRegistered(address oracle, uint8[3] indexes);
 
     // Modifier that requires the operational boolean variable to be true. This
     // is used on all state changing functions to pause the contract in the
@@ -161,7 +173,7 @@ contract FlightSuretyApp {
     function payAirlineRegistrationFee()
     requireIsOperational
     requireAirline  // Verify if the caller is a registered airline.
-    requireFee(AIRLINE_REGISTRATION_FEE)  // Verifiy the airline registration fee.
+    requireFee(AIRLINE_REGISTRATION_FEE)  // Verify the airline registration fee.
     returnChange(AIRLINE_REGISTRATION_FEE)  // Return any excess change to the sender.
     public payable {
         // Send registration fee to the data contract.
@@ -178,6 +190,64 @@ contract FlightSuretyApp {
     public view returns (uint256 fee) {
         fee = ORACLE_REGISTRATION_FEE;
         return (fee);
+    }
+
+    // Register a new oracle.
+    function registerOracle()
+    requireIsOperational
+    requireFee(ORACLE_REGISTRATION_FEE)  // Verify the oracle registration fee.
+    returnChange(ORACLE_REGISTRATION_FEE)  // Return any excess change to the sender.
+    public payable {
+        uint8[3] memory indexes = generateIndexes(msg.sender);
+        oracles[msg.sender] = Oracle({
+            isRegistered: true,
+            indexes: indexes
+        });
+        // Emit event to inform a new oracle was registered.
+        emit OracleRegistered(msg.sender, indexes);
+    }
+
+    // Return array if three non-duplicating integers from 0-9.
+    function generateIndexes(address account)
+    requireIsOperational
+    internal returns (uint8[3] memory indexes) {
+        // Generate first index based on account.
+        indexes[0] = getRandomIndex(account);
+
+        // Generate second index based on account and ensure it is different
+        // from the first index.
+        indexes[1] = indexes[0];
+        while (indexes[1] == indexes[0]) {
+            indexes[1] = getRandomIndex(account);
+        }
+
+        // Generate third index based on account and ensure it is different
+        // from the first and second index.
+        indexes[2] = indexes[1];
+        while ((indexes[2] == indexes[0]) || (indexes[2] == indexes[1])) {
+            indexes[2] = getRandomIndex(account);
+        }
+        
+        return indexes;
+    }
+
+    // Return a pseudo random number between 0-9.
+    function getRandomIndex(address account)
+    requireIsOperational
+    internal returns (uint8 index) {
+        uint8 max = 10;
+
+        // Generate a pseudo random number using the blockhash and incremented
+        // nonce to add variation.
+        index = uint8(uint256(keccak256(abi.encodePacked(blockhash(block.number - nonce++), account))) % max);
+
+        // Limit the nonce because we are only able to fetch blockhashes for
+        // last 256 blocks.
+        if (nonce > 250) {
+            nonce = 0;
+        }
+
+        return index;
     }
 
 }

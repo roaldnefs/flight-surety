@@ -12,6 +12,7 @@ const flightSuretyApp = new web3.eth.Contract(FlightSuretyAppArtifact.abi, confi
 const flightSuretyData = new web3.eth.Contract(FlightSuretyDataArtifact.abi, config.dataAddress);
 
 const NUMBER_OF_ORACLES = 20;
+const NUMBER_OF_ACCOUNTS = 50;
 
 const Server = {
     oracles: [],
@@ -28,8 +29,22 @@ const Server = {
     init: async function(numberOfOracles) {
         // TODO: add event listeners
 
-        const ORACLE_REGISTRATION_FEE = await flightSuretyApp.methods.getOracleRegistrationFee().call();
-        console.log('ORACLE_REGSITRATION_FEE: ' + ORACLE_REGISTRATION_FEE);
+        const oracleRegistrationFee = await flightSuretyApp.methods.getOracleRegistrationFee().call();
+
+        // Set the oracles to the last accounts available in web3.
+        this.oracles = (await web3.eth.getAccounts()).slice(NUMBER_OF_ACCOUNTS - numberOfOracles);
+        // Register each of the oracles.
+        this.oracles.forEach(async account => {
+            try {
+                await flightSuretyApp.methods.registerOracle().send({
+                    from: account,
+                    value: oracleRegistrationFee,
+                    gas: 3000000
+                });
+            } catch (error) {
+                console.log(error.message);
+            }
+        });
 
     },
 };
